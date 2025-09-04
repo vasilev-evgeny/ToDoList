@@ -27,10 +27,28 @@ class ToDoListView : UIViewController {
     let searchBar : UISearchBar = {
         let bar = UISearchBar()
         bar.placeholder = "Search"
-        bar.backgroundColor = UIColor(hex: "#272729", alpha: 1.0)
-        bar.setImage(UIImage(systemName: "magnifyingglass"), for: .search, state: .normal)
+        bar.backgroundImage = UIImage()
+        bar.backgroundColor = UIColor(hex: "#272729")
+        if let textField = bar.value(forKey: "searchField") as? UITextField {
+                textField.backgroundColor = UIColor(hex: "#272729")
+                textField.textColor = .white
+                textField.attributedPlaceholder = NSAttributedString(
+                    string: "Search",
+                    attributes: [NSAttributedString.Key.foregroundColor: UIColor(red: 141/255, green: 141/255, blue: 142/255, alpha: 1)]
+                )
+            }
+        let glassImage = UIImage(systemName: "magnifyingglass")?
+            .withTintColor(UIColor(red: 141/255, green: 141/255, blue: 142/255, alpha: 1), renderingMode: .alwaysOriginal)
+
+        let micImage = UIImage(systemName: "mic.fill")?
+            .withTintColor(UIColor(red: 141/255, green: 141/255, blue: 142/255, alpha: 1), renderingMode: .alwaysOriginal)
+
+        bar.setImage(glassImage, for: .search, state: .normal)
+        bar.setImage(micImage, for: .bookmark, state: .normal)
+        bar.showsBookmarkButton = true
         bar.layer.cornerRadius = 10
         bar.layer.masksToBounds = true
+        bar.tintColor = UIColor(red: 141/255, green: 141/255, blue: 142/255, alpha: 1)
         return bar
     }()
     
