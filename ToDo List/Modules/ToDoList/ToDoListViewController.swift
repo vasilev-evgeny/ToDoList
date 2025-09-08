@@ -1,4 +1,3 @@
-//
 //  ToDoViewController.swift
 //  ToDo List
 //
@@ -6,16 +5,23 @@
 //
 import UIKit
 
-class ToDoListView : UIViewController {
+protocol ToDoListViewProtocol: AnyObject {
+    func showTasks(_ tasks: [ToDoItem])
+    func showError(_ error: String)
+    func showLoading()
+    func hideLoading()
+    func updateTasksCount(_ count: Int)
+}
+
+class ToDoListViewController: UIViewController {
     
+    var presenter: ToDoListPresenterProtocol!
+
+    private var tasks: [ToDoItem] = []
     
-    enum Constants {
-        
-    }
+    //MARK: - UI Elements
     
-    //MARK: - Create UI
-    
-    let titleLabel : UILabel = {
+    private let titleLabel: UILabel = {
         let label = UILabel()
         label.textAlignment = .left
         label.font = UIFont.systemFont(ofSize: 34, weight: .bold)
@@ -24,25 +30,23 @@ class ToDoListView : UIViewController {
         return label
     }()
     
-    let searchBar : UISearchBar = {
+    private let searchBar: UISearchBar = {
         let bar = UISearchBar()
         bar.placeholder = "Search"
         bar.backgroundImage = UIImage()
         bar.backgroundColor = UIColor(hex: "#272729")
         if let textField = bar.value(forKey: "searchField") as? UITextField {
-                textField.backgroundColor = UIColor(hex: "#272729")
-                textField.textColor = .white
-                textField.attributedPlaceholder = NSAttributedString(
-                    string: "Search",
-                    attributes: [NSAttributedString.Key.foregroundColor: UIColor(red: 141/255, green: 141/255, blue: 142/255, alpha: 1)]
-                )
-            }
+            textField.backgroundColor = UIColor(hex: "#272729")
+            textField.textColor = .white
+            textField.attributedPlaceholder = NSAttributedString(
+                string: "Search",
+                attributes: [NSAttributedString.Key.foregroundColor: UIColor(red: 141/255, green: 141/255, blue: 142/255, alpha: 1)]
+            )
+        }
         let glassImage = UIImage(systemName: "magnifyingglass")?
             .withTintColor(UIColor(red: 141/255, green: 141/255, blue: 142/255, alpha: 1), renderingMode: .alwaysOriginal)
-
         let micImage = UIImage(systemName: "mic.fill")?
             .withTintColor(UIColor(red: 141/255, green: 141/255, blue: 142/255, alpha: 1), renderingMode: .alwaysOriginal)
-
         bar.setImage(glassImage, for: .search, state: .normal)
         bar.setImage(micImage, for: .bookmark, state: .normal)
         bar.showsBookmarkButton = true
@@ -52,42 +56,34 @@ class ToDoListView : UIViewController {
         return bar
     }()
     
-    let tasksTableView : UITableView = {
+    private let tasksTableView: UITableView = {
         let view = UITableView(frame: .zero)
         view.separatorStyle = .singleLine
         view.backgroundColor = .clear
-        view.separatorColor = .darkGray 
+        view.separatorColor = .darkGray
         return view
     }()
     
-    let bottomView : UIView = {
+    private let bottomView: UIView = {
         let view = UIView()
         view.backgroundColor = UIColor(hex: "#272729")
         return view
     }()
     
-    let tasksCountLabel : UILabel = {
+    private let tasksCountLabel: UILabel = {
         let label = UILabel()
         label.textAlignment = .center
         label.font = UIFont.systemFont(ofSize: 11, weight: .regular)
-        label.text = "7 Задач"
+        label.text = "0 Задач"
         label.textColor = .white
         return label
     }()
     
-    let addTaskButton : UIButton = {
+    private let addTaskButton: UIButton = {
         let button = UIButton()
         button.setImage(UIImage(named: "addtaskImage"), for: .normal)
         return button
     }()
-    
-    //MARK: - Properties
-    
-    func setDelegates() {
-        tasksTableView.delegate = self
-        tasksTableView.dataSource = self
-        tasksTableView.register(ToDoCell.self, forCellReuseIdentifier: "ToDoCell")
-    }
     
     //MARK: - Lifecycle
     
@@ -95,8 +91,12 @@ class ToDoListView : UIViewController {
         super.viewDidLoad()
         setupViews()
         setConstraints()
-        setDelegates()
+        setupTableView()
+        setupActions()
+        presenter.viewDidLoad()
     }
+    
+    //MARK: - Setup Methods
     
     private func setupViews() {
         view.backgroundColor = .black
@@ -108,7 +108,23 @@ class ToDoListView : UIViewController {
         view.addSubview(tasksTableView)
     }
     
-    //MARK: - setConstraints
+    private func setupTableView() {
+        tasksTableView.delegate = self
+        tasksTableView.dataSource = self
+        tasksTableView.register(ToDoCell.self, forCellReuseIdentifier: "ToDoCell")
+        tasksTableView.tableFooterView = UIView()
+    }
+    
+    private func setupActions() {
+        addTaskButton.addTarget(self, action: #selector(addTaskTapped), for: .touchUpInside)
+        searchBar.delegate = self
+    }
+    
+    @objc private func addTaskTapped() {
+    }
+    
+    
+    //MARK: - Constraints
     
     private func setConstraints() {
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -130,7 +146,7 @@ class ToDoListView : UIViewController {
             tasksTableView.topAnchor.constraint(equalTo: searchBar.bottomAnchor, constant: 16),
             tasksTableView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
             tasksTableView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            tasksTableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            tasksTableView.bottomAnchor.constraint(equalTo: bottomView.topAnchor)
         ])
         
         bottomView.translatesAutoresizingMaskIntoConstraints = false
@@ -157,15 +173,14 @@ class ToDoListView : UIViewController {
     }
 }
 
-//MARK: - Extensions
-
-extension ToDoListView :  UITableViewDelegate, UITableViewDataSource {
+//MARK: - UITableView Delegate & DataSource
+extension ToDoListViewController: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        1
+        return tasks.count
     }
     
     func numberOfSections(in tableView: UITableView) -> Int {
-        3
+        return 1
     }
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
@@ -174,6 +189,58 @@ extension ToDoListView :  UITableViewDelegate, UITableViewDataSource {
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoCell", for: indexPath) as! ToDoCell
+        let task = tasks[indexPath.row]
+        cell.configure(with: task)
+        cell.selectionStyle = .none
         return cell
+    }
+    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+        let task = tasks[indexPath.row]
+        presenter.didSelectTask(task)
+    }
+}
+
+//MARK: - UISearchBarDelegate
+extension ToDoListViewController: UISearchBarDelegate {
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+    }
+    
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        searchBar.resignFirstResponder()
+    }
+    
+    func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
+        searchBar.text = ""
+        searchBar.resignFirstResponder()
+    }
+}
+
+// MARK: - View Protocol
+extension ToDoListViewController: ToDoListViewProtocol {
+    func showTasks(_ tasks: [ToDoItem]) {
+        self.tasks = tasks
+        tasksTableView.reloadData()
+        updateTasksCount(tasks.count)
+    }
+    
+    func showError(_ error: String) {
+        let alert = UIAlertController(title: "Ошибка", message: error, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
+    }
+    
+    func showLoading() {
+        // Можно добавить индикатор
+        print("Загрузка...")
+    }
+    
+    func hideLoading() {
+        print("Загрузка завершена")
+    }
+    
+    func updateTasksCount(_ count: Int) {
+        tasksCountLabel.text = "\(count) Задач"
     }
 }

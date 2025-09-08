@@ -46,6 +46,12 @@ class ToDoCell : UITableViewCell {
     
     //MARK: - Func
     
+    func configure(with task: ToDoItem) {
+            titleLabel.text = "\(task.id)"
+            detailLabel.text = task.todo
+            dateLabel.text = "02/10/24"
+            // Настройка чекбокса в зависимости от task.isCompleted
+        }
     
     //MARK: - Setup
     

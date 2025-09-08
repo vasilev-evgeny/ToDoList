@@ -4,11 +4,13 @@
 //
 //  Created by Евгений Васильев on 04.09.2025.
 //
-import UIKit
+import Foundation
 
-struct toDoTask {
-    var id : String
-    var toDo : String
-    var competion : Bool
-    var userID : Int
+struct ToDoItem: Codable {
+    var id: Int
+    var todo: String
+    var completed: Bool
+    var userId: Int
+
 }
+
