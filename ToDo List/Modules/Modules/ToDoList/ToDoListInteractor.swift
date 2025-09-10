@@ -113,12 +113,9 @@ class ToDoListInteractor: ToDoListInteractorProtocol {
         let operation = BlockOperation {
             var updatedTask = task
             updatedTask.completed.toggle()
-            
             // Сохраняем в CoreData
             CoreDataManager.shared.updateTask(updatedTask)
-            
-            print("✅ Task completion toggled: ID \(updatedTask.id), completed: \(updatedTask.completed)")
-        }
+            }
         operationQueue.addOperation(operation)
     }
     

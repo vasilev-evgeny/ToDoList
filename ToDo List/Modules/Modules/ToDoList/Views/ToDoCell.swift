@@ -35,7 +35,6 @@ class ToDoCell: UITableViewCell {
         label.font = UIFont.systemFont(ofSize: 12, weight: .regular)
         label.textColor = .gray
         label.numberOfLines = 0
-        label.isHidden = true // Скрываем дату полностью
         return label
     }()
     
@@ -87,7 +86,6 @@ class ToDoCell: UITableViewCell {
         // Устанавливаем обычный текст
         titleLabel.text = "Задача #\(task.id)"
         detailLabel.text = task.todo
-        
         // Сбрасываем цвета
         titleLabel.textColor = .white
         detailLabel.textColor = .white
@@ -149,8 +147,8 @@ class ToDoCell: UITableViewCell {
         
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            titleLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
-            titleLabel.leadingAnchor.constraint(equalTo: checkBoxButton.trailingAnchor, constant: 12),
+            titleLabel.centerYAnchor.constraint(equalTo: checkBoxButton.centerYAnchor),
+            titleLabel.leadingAnchor.constraint(equalTo: checkBoxButton.trailingAnchor, constant: 8),
             titleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16)
         ])
         
@@ -159,14 +157,12 @@ class ToDoCell: UITableViewCell {
             detailLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 6),
             detailLabel.leadingAnchor.constraint(equalTo: checkBoxButton.trailingAnchor, constant: 12),
             detailLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            detailLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -16)
         ])
         
         dateLabel.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
             dateLabel.topAnchor.constraint(equalTo: detailLabel.bottomAnchor, constant: 6),
             dateLabel.leadingAnchor.constraint(equalTo: checkBoxButton.trailingAnchor, constant: 12),
-            dateLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16)
         ])
     }
 }
