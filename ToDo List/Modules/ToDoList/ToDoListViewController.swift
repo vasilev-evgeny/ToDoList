@@ -123,6 +123,36 @@ class ToDoListViewController: UIViewController {
     @objc private func addTaskTapped() {
     }
     
+    private func toggleTaskCompletion(at indexPath: IndexPath) {
+            var task = tasks[indexPath.row]
+            task.completed.toggle()
+            tasks[indexPath.row] = task
+            tasksTableView.reloadRows(at: [indexPath], with: .automatic)
+            
+            // Здесь можно вызвать метод презентера для обновления на сервере/бд
+            // presenter.toggleTaskCompletion(task)
+        }
+    
+    private func showDeleteConfirmation(for task: ToDoItem, at indexPath: IndexPath) {
+            let alert = UIAlertController(
+                title: "Удалить задачу?",
+                message: "Задача \"\(task.todo)\" будет удалена",
+                preferredStyle: .alert
+            )
+            
+            alert.addAction(UIAlertAction(title: "Отмена", style: .cancel))
+            alert.addAction(UIAlertAction(title: "Удалить", style: .destructive) { _ in
+                self.tasks.remove(at: indexPath.row)
+                self.tasksTableView.deleteRows(at: [indexPath], with: .automatic)
+                self.updateTasksCount(self.tasks.count)
+                
+                // Здесь можно вызвать метод презентера для удаления из сервера/бд
+                // presenter.deleteTask(task)
+            })
+            
+            present(alert, animated: true)
+        }
+    
     
     //MARK: - Constraints
     
@@ -192,6 +222,8 @@ extension ToDoListViewController: UITableViewDelegate, UITableViewDataSource {
         let task = tasks[indexPath.row]
         cell.configure(with: task)
         cell.selectionStyle = .none
+        cell.contentView.backgroundColor = .clear
+        cell.backgroundColor = .clear
         return cell
     }
     
@@ -200,6 +232,97 @@ extension ToDoListViewController: UITableViewDelegate, UITableViewDataSource {
         let task = tasks[indexPath.row]
         presenter.didSelectTask(task)
     }
+    
+    func tableView(_ tableView: UITableView,
+                      contextMenuConfigurationForRowAt indexPath: IndexPath,
+                   point: CGPoint) -> UIContextMenuConfiguration? {
+        
+        let task = tasks[indexPath.row]
+        
+        return UIContextMenuConfiguration(identifier: indexPath as NSCopying, previewProvider: {
+            // Создаем preview контроллер
+            let previewVC = UIViewController()
+            previewVC.view.backgroundColor = .black
+            
+            let label = UILabel()
+            label.text = task.todo
+            label.textColor = .white
+            label.textAlignment = .center
+            label.numberOfLines = 0
+            previewVC.view.addSubview(label)
+            label.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                label.centerXAnchor.constraint(equalTo: previewVC.view.centerXAnchor),
+                label.centerYAnchor.constraint(equalTo: previewVC.view.centerYAnchor),
+                label.leadingAnchor.constraint(equalTo: previewVC.view.leadingAnchor, constant: 20),
+                label.trailingAnchor.constraint(equalTo: previewVC.view.trailingAnchor, constant: -20)
+            ])
+            return previewVC
+        }) { _ in
+            // Создаем actions для меню
+            let editAction = UIAction(
+                title: "Редактировать",
+                image: UIImage(named: "edit")
+            ) { [weak self] _ in
+                let task = self?.tasks[indexPath.row]
+                self?.presenter.didSelectTask(task!)
+            }
+            let completeAction = UIAction(
+                title: "Поделиться",
+                image: UIImage(named: "export")
+            ) { [weak self] _ in
+                print("share")
+            }
+            let deleteAction = UIAction(
+                title: "Удалить",
+                image: UIImage(named: "trash"),
+                attributes: .destructive
+            ) { [weak self] _ in
+                let task = self?.tasks[indexPath.row]
+                self?.showDeleteConfirmation(for: task!, at: indexPath)
+            }
+            return UIMenu(children: [completeAction, editAction, deleteAction])
+        }
+    }
+    
+    func tableView(_ tableView: UITableView,
+                      willDisplayContextMenu configuration: UIContextMenuConfiguration,
+                      animator: UIContextMenuInteractionAnimating?) {
+            
+            if let indexPath = configuration.identifier as? IndexPath,
+               let cell = tableView.cellForRow(at: indexPath) {
+                UIView.animate(withDuration: 0.2) {
+                    cell.backgroundColor = UIColor(hex: "#272729")
+                    cell.layer.cornerRadius = 10
+                }
+            }
+        }
+    
+    func tableView(_ tableView: UITableView,
+                   previewForHighlightingContextMenuWithConfiguration configuration: UIContextMenuConfiguration) -> UITargetedPreview? {
+        
+        guard let indexPath = configuration.identifier as? IndexPath,
+              let cell = tableView.cellForRow(at: indexPath) else {
+            return nil
+        }
+        
+        let parameters = UIPreviewParameters()
+        parameters.backgroundColor = .clear
+        parameters.visiblePath = UIBezierPath(rect: cell.bounds)
+        let target = UIPreviewTarget(container: cell, center: CGPoint(x: cell.bounds.midX, y: cell.bounds.midY))
+        return UITargetedPreview(view: cell, parameters: parameters, target: target)
+    }
+    
+    func tableView(_ tableView: UITableView,
+                      willEndContextMenuInteraction configuration: UIContextMenuConfiguration,
+                      animator: UIContextMenuInteractionAnimating?) {
+            if let indexPath = configuration.identifier as? IndexPath,
+               let cell = tableView.cellForRow(at: indexPath) {
+                UIView.animate(withDuration: 0.2) {
+                    cell.backgroundColor = .clear
+                }
+            }
+        }
 }
 
 //MARK: - UISearchBarDelegate

@@ -20,18 +20,13 @@ class TaskDetailRouter: TaskDetailRouterProtocol {
         let interactor = TaskDetailInteractor()
         let presenter = TaskDetailPresenter(task: task)
         let router = TaskDetailRouter()
-        
         // Связываем всё вместе
         view.presenter = presenter
-        
         presenter.view = view
         presenter.interactor = interactor
         presenter.router = router
-        
         interactor.presenter = presenter
-        
         router.viewController = view
-        
         return view
     }
 }
