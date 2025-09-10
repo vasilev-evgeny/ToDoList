@@ -35,6 +35,7 @@ class ToDoCell: UITableViewCell {
         label.font = UIFont.systemFont(ofSize: 12, weight: .regular)
         label.textColor = .gray
         label.numberOfLines = 0
+        label.text = "01.01.2025"
         return label
     }()
     
@@ -60,53 +61,52 @@ class ToDoCell: UITableViewCell {
     }
     
     private func updateTextAppearance(for isCompleted: Bool) {
-        if isCompleted {
-            // Зачеркнутый текст серого цвета для выполненной задачи
+        if isCompleted == true {
+            // Создаём атрибутированный текст из текущего значения text
+            guard let currentText = titleLabel.text else { return }
+            guard let curText = detailLabel.text else { return }
+
             let attributedString = NSAttributedString(
-                string: titleLabel.text ?? "",
+                string: currentText,
+                attributes: [
+                    .strikethroughStyle: NSUnderlineStyle.single.rawValue,
+                    .foregroundColor: UIColor.gray
+                ]
+            )
+            let attString = NSAttributedString(
+                string: curText,
                 attributes: [
                     .strikethroughStyle: NSUnderlineStyle.single.rawValue,
                     .foregroundColor: UIColor.gray
                 ]
             )
             titleLabel.attributedText = attributedString
+            detailLabel.attributedText = attString
+            titleLabel.textColor = .gray
             detailLabel.textColor = .gray
         } else {
-            // Обычный текст белого цвета без зачеркивания
-            titleLabel.attributedText = nil
+//            titleLabel.text = "Задача № \()"
+//            detailLabel.attributedText = nil
             titleLabel.textColor = .white
             detailLabel.textColor = .white
         }
     }
     
     func configure(with task: ToDoItem) {
-        // Сначала сбрасываем все атрибуты
-        titleLabel.attributedText = nil
-        
-        // Устанавливаем обычный текст
         titleLabel.text = "Задача #\(task.id)"
         detailLabel.text = task.todo
-        // Сбрасываем цвета
-        titleLabel.textColor = .white
-        detailLabel.textColor = .white
-        
         backgroundColor = .clear
         contentView.backgroundColor = .clear
-        
-        // Устанавливаем состояние кнопки
         checkBoxButton.isSelected = task.completed
-        
-        // Обновляем внешний вид текста
         updateTextAppearance(for: task.completed)
     }
     
     override func prepareForReuse() {
         super.prepareForReuse()
-        // Сбрасываем состояние при переиспользовании ячейки
         titleLabel.attributedText = nil
         detailLabel.attributedText = nil
-        titleLabel.text = nil
-        detailLabel.text = nil
+//        titleLabel.text = nil
+//        detailLabel.text = nil
         titleLabel.textColor = .white
         detailLabel.textColor = .white
         checkBoxButton.isSelected = false
@@ -139,8 +139,8 @@ class ToDoCell: UITableViewCell {
     private func setConstraints() {
         checkBoxButton.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            checkBoxButton.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
-            checkBoxButton.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            checkBoxButton.centerYAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
+            checkBoxButton.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
             checkBoxButton.widthAnchor.constraint(equalToConstant: 24),
             checkBoxButton.heightAnchor.constraint(equalToConstant: 24)
         ])
@@ -163,6 +163,7 @@ class ToDoCell: UITableViewCell {
         NSLayoutConstraint.activate([
             dateLabel.topAnchor.constraint(equalTo: detailLabel.bottomAnchor, constant: 6),
             dateLabel.leadingAnchor.constraint(equalTo: checkBoxButton.trailingAnchor, constant: 12),
+            dateLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16)
         ])
     }
 }
