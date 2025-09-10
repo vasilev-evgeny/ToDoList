@@ -9,6 +9,9 @@ protocol ToDoListPresenterProtocol: AnyObject {
     func addNewTask()
     func didSelectTask(_ task: ToDoItem)
     func searchTask(query: String)
+    func toggleTaskCompletion(_ task: ToDoItem)
+    func deleteTask(_ task: ToDoItem)
+    func createTask(todo: String, completed: Bool)
 }
 
 class ToDoListPresenter: ToDoListPresenterProtocol {
@@ -33,11 +36,27 @@ class ToDoListPresenter: ToDoListPresenterProtocol {
     }
     
     func searchTask(query: String) {
-        if query.isEmpty {
-            view.showTasks(tasks) 
-        } else {
-            interactor.searchTasks(query: query)
+        interactor.searchTasks(query: query)
+    }
+    
+    func toggleTaskCompletion(_ task: ToDoItem) {
+        interactor.toggleTaskCompletion(task)
+        if let index = tasks.firstIndex(where: { $0.id == task.id }) {
+            tasks[index].completed.toggle()
+            view.showTasks(tasks)
         }
+    }
+    
+    func deleteTask(_ task: ToDoItem) {
+        interactor.deleteTask(task)
+        tasks.removeAll { $0.id == task.id }
+        view.showTasks(tasks)
+    }
+    
+    func createTask(todo: String, completed: Bool) {
+        interactor.createTask(todo: todo, completed: completed)
+        // После создания перезагружаем задачи
+        interactor.loadTasks()
     }
     
     // MARK: - Callbacks from Interactor

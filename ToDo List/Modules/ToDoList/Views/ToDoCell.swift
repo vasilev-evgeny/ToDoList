@@ -5,8 +5,13 @@
 //  Created by Евгений Васильев on 04.09.2025.
 //
 import UIKit
-
 class ToDoCell : UITableViewCell {
+    
+    var onCheckboxTapped: ((Bool) -> Void)?
+    
+    // Добавляем свойства для хранения оригинального текста
+    private var originalTitleText: String = ""
+    private var originalDetailText: String = ""
     
     //MARK: - Create UI
     
@@ -14,7 +19,6 @@ class ToDoCell : UITableViewCell {
         let label = UILabel()
         label.textAlignment = .left
         label.font = UIFont.systemFont(ofSize: 16, weight: .medium)
-        label.text = "Уборка в квартире"
         label.textColor = .white
         return label
     }()
@@ -23,7 +27,6 @@ class ToDoCell : UITableViewCell {
         let label = UILabel()
         label.textAlignment = .left
         label.font = UIFont.systemFont(ofSize: 12, weight: .regular)
-        label.text = "Провести генеральную уборку в квартире"
         label.textColor = .white
         return label
     }()
@@ -46,13 +49,70 @@ class ToDoCell : UITableViewCell {
     
     //MARK: - Func
     
+    private func setupActions() {
+        checkBoxButton.addTarget(self, action: #selector(checkboxTapped), for: .touchUpInside)
+    }
+    
+    @objc private func checkboxTapped() {
+        let newState = !checkBoxButton.isSelected
+        checkBoxButton.isSelected = newState
+        checkBoxButton.setImage(
+            newState ? UIImage(named: "taskCheckBoxFillImage") : UIImage(named: "taskCheckBoxEmptyImage"),
+            for: .normal
+        )
+        onCheckboxTapped?(newState)
+        updateTextAppearance(for: newState)
+    }
+    
+    private func updateTextAppearance(for isCompleted: Bool) {
+        if isCompleted {
+            // Зачеркиваем текст
+            let titleAttributedString = NSMutableAttributedString(string: originalTitleText)
+            let detailAttributedString = NSMutableAttributedString(string: originalDetailText)
+            
+            titleAttributedString.addAttribute(.strikethroughStyle,
+                                             value: 1,
+                                             range: NSRange(location: 0, length: titleAttributedString.length))
+            detailAttributedString.addAttribute(.strikethroughStyle,
+                                              value: 1,
+                                              range: NSRange(location: 0, length: detailAttributedString.length))
+            
+            titleLabel.attributedText = titleAttributedString
+            detailLabel.attributedText = detailAttributedString
+            titleLabel.textColor = .gray
+            detailLabel.textColor = .gray
+        } else {
+            // Возвращаем обычный текст - убираем зачеркивание
+            titleLabel.attributedText = nil
+            detailLabel.attributedText = nil
+            titleLabel.text = originalTitleText
+            detailLabel.text = originalDetailText
+            titleLabel.textColor = .white
+            detailLabel.textColor = .white
+        }
+    }
+    
     func configure(with task: ToDoItem) {
-        titleLabel.text = "Задача #\(task.id)"
-        detailLabel.text = task.todo
+        // Сохраняем оригинальный текст
+        originalTitleText = "Задача #\(task.id)"
+        originalDetailText = task.todo
+        
+        // Устанавливаем текст
+        titleLabel.text = originalTitleText
+        detailLabel.text = originalDetailText
         dateLabel.text = "02/10/24"
         backgroundColor = .clear
         contentView.backgroundColor = .clear
-        // Настройка чекбокса в зависимости от task.isCompleted
+        
+        // Устанавливаем состояние кнопки
+        checkBoxButton.isSelected = task.completed
+        checkBoxButton.setImage(
+            task.completed ? UIImage(named: "taskCheckBoxFillImage") : UIImage(named: "taskCheckBoxEmptyImage"),
+            for: .normal
+        )
+        
+        // Обновляем внешний вид текста
+        updateTextAppearance(for: task.completed)
     }
     
     //MARK: - Setup
@@ -61,6 +121,7 @@ class ToDoCell : UITableViewCell {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         setupViews()
         setConstraints()
+        setupActions()
     }
     
     required init?(coder: NSCoder) {
@@ -103,7 +164,4 @@ class ToDoCell : UITableViewCell {
             dateLabel.leadingAnchor.constraint(equalTo: checkBoxButton.trailingAnchor, constant: 8)
         ])
     }
-    
 }
-
-

@@ -12,6 +12,9 @@ class TaskDetailRouter: TaskDetailRouterProtocol {
     
     func close() {
         viewController?.navigationController?.popViewController(animated: true)
+        if let listVC = viewController?.navigationController?.topViewController as? ToDoListViewController {
+                listVC.presenter.viewDidLoad() 
+            }
     }
     
     // Фабрика для создания модуля

@@ -70,6 +70,7 @@ class TaskDetailViewController : UIViewController {
         setConstraints()
         setupNavigationBar()
         presenter.viewDidLoad()
+        setupTextViewDelegates()
     }
     
     private func setupViews() {
@@ -78,6 +79,11 @@ class TaskDetailViewController : UIViewController {
         view.addSubview(dateLabel)
         view.addSubview(taskBodyTextView)
     }
+    
+    private func setupTextViewDelegates() {
+            taskTitleTextView.delegate = self
+            taskBodyTextView.delegate = self
+        }
     
     //MARK: - setConstraints
     
@@ -109,6 +115,11 @@ class TaskDetailViewController : UIViewController {
 // MARK: - UITextViewDelegate
 
 extension TaskDetailViewController: UITextViewDelegate {
+    func textViewDidChange(_ textView: UITextView) {
+        if textView == taskBodyTextView {
+            presenter.updateTaskTitle(textView.text)
+        }
+    }    
     func textViewDidEndEditing(_ textView: UITextView) {
         presenter.updateTaskTitle(textView.text)
     }

@@ -16,7 +16,7 @@ protocol ToDoListViewProtocol: AnyObject {
 class ToDoListViewController: UIViewController {
     
     var presenter: ToDoListPresenterProtocol!
-
+    
     private var tasks: [ToDoItem] = []
     
     //MARK: - UI Elements
@@ -124,34 +124,32 @@ class ToDoListViewController: UIViewController {
     }
     
     private func toggleTaskCompletion(at indexPath: IndexPath) {
-            var task = tasks[indexPath.row]
-            task.completed.toggle()
-            tasks[indexPath.row] = task
-            tasksTableView.reloadRows(at: [indexPath], with: .automatic)
-            
-            // Здесь можно вызвать метод презентера для обновления на сервере/бд
-            // presenter.toggleTaskCompletion(task)
-        }
+        var task = tasks[indexPath.row]
+        task.completed.toggle()
+        tasks[indexPath.row] = task
+        tasksTableView.reloadRows(at: [indexPath], with: .automatic)
+        
+        // Здесь можно вызвать метод презентера для обновления на сервере/бд
+        // presenter.toggleTaskCompletion(task)
+    }
     
     private func showDeleteConfirmation(for task: ToDoItem, at indexPath: IndexPath) {
-            let alert = UIAlertController(
-                title: "Удалить задачу?",
-                message: "Задача \"\(task.todo)\" будет удалена",
-                preferredStyle: .alert
-            )
-            
-            alert.addAction(UIAlertAction(title: "Отмена", style: .cancel))
-            alert.addAction(UIAlertAction(title: "Удалить", style: .destructive) { _ in
-                self.tasks.remove(at: indexPath.row)
-                self.tasksTableView.deleteRows(at: [indexPath], with: .automatic)
-                self.updateTasksCount(self.tasks.count)
-                
-                // Здесь можно вызвать метод презентера для удаления из сервера/бд
-                // presenter.deleteTask(task)
-            })
-            
-            present(alert, animated: true)
-        }
+        let alert = UIAlertController(
+            title: "Удалить задачу?",
+            message: "Задача \"\(task.todo)\" будет удалена",
+            preferredStyle: .alert
+        )
+        
+        alert.addAction(UIAlertAction(title: "Отмена", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Удалить", style: .destructive) { _ in
+            self.tasks.remove(at: indexPath.row)
+            self.tasksTableView.deleteRows(at: [indexPath], with: .automatic)
+            self.updateTasksCount(self.tasks.count)
+            self.presenter.deleteTask(task)
+        })
+        
+        present(alert, animated: true)
+    }
     
     
     //MARK: - Constraints
@@ -224,6 +222,11 @@ extension ToDoListViewController: UITableViewDelegate, UITableViewDataSource {
         cell.selectionStyle = .none
         cell.contentView.backgroundColor = .clear
         cell.backgroundColor = .clear
+        cell.onCheckboxTapped = { [weak self] isCompleted in
+            var updatedTask = task
+            updatedTask.completed = isCompleted
+            self?.presenter.toggleTaskCompletion(updatedTask)
+        }
         return cell
     }
     
@@ -234,7 +237,7 @@ extension ToDoListViewController: UITableViewDelegate, UITableViewDataSource {
     }
     
     func tableView(_ tableView: UITableView,
-                      contextMenuConfigurationForRowAt indexPath: IndexPath,
+                   contextMenuConfigurationForRowAt indexPath: IndexPath,
                    point: CGPoint) -> UIContextMenuConfiguration? {
         
         let task = tasks[indexPath.row]
@@ -285,44 +288,60 @@ extension ToDoListViewController: UITableViewDelegate, UITableViewDataSource {
         }
     }
     
-    func tableView(_ tableView: UITableView,
-                      willDisplayContextMenu configuration: UIContextMenuConfiguration,
-                      animator: UIContextMenuInteractionAnimating?) {
-            
-            if let indexPath = configuration.identifier as? IndexPath,
-               let cell = tableView.cellForRow(at: indexPath) {
-                UIView.animate(withDuration: 0.2) {
-                    cell.backgroundColor = UIColor(hex: "#272729")
-                    cell.layer.cornerRadius = 10
-                }
-            }
-        }
+    func tableView(_ tableView: UITableView, previewForDismissingContextMenuWithConfiguration configuration: UIContextMenuConfiguration) -> UITargetedPreview? {
+        return targetedPreview(for: configuration)
+    }
     
-    func tableView(_ tableView: UITableView,
-                   previewForHighlightingContextMenuWithConfiguration configuration: UIContextMenuConfiguration) -> UITargetedPreview? {
-        
+    func tableView(_ tableView: UITableView, previewForHighlightingContextMenuWithConfiguration configuration: UIContextMenuConfiguration) -> UITargetedPreview? {
+        return targetedPreview(for: configuration)
+    }
+    
+    private func targetedPreview(for configuration: UIContextMenuConfiguration) -> UITargetedPreview? {
         guard let indexPath = configuration.identifier as? IndexPath,
-              let cell = tableView.cellForRow(at: indexPath) else {
+              let cell = tasksTableView.cellForRow(at: indexPath) as? ToDoCell else {
             return nil
         }
-        
         let parameters = UIPreviewParameters()
         parameters.backgroundColor = .clear
-        parameters.visiblePath = UIBezierPath(rect: cell.bounds)
-        let target = UIPreviewTarget(container: cell, center: CGPoint(x: cell.bounds.midX, y: cell.bounds.midY))
+        parameters.visiblePath = UIBezierPath(roundedRect: cell.bounds, cornerRadius: 12)
+        let cellCenterInTable = tasksTableView.convert(cell.center, from: cell.superview)
+        let targetPoint = CGPoint(x: cellCenterInTable.x, y: cellCenterInTable.y - 50)
+        let target = UIPreviewTarget(container: cell, center: targetPoint)
         return UITargetedPreview(view: cell, parameters: parameters, target: target)
     }
     
     func tableView(_ tableView: UITableView,
-                      willEndContextMenuInteraction configuration: UIContextMenuConfiguration,
-                      animator: UIContextMenuInteractionAnimating?) {
-            if let indexPath = configuration.identifier as? IndexPath,
-               let cell = tableView.cellForRow(at: indexPath) {
-                UIView.animate(withDuration: 0.2) {
-                    cell.backgroundColor = .clear
-                }
+                   willDisplayContextMenu configuration: UIContextMenuConfiguration,
+                   animator: UIContextMenuInteractionAnimating?) {
+        if let indexPath = configuration.identifier as? IndexPath,
+           let cell = tableView.cellForRow(at: indexPath) as? ToDoCell {
+            UIView.animate(withDuration: 0.3) {
+                cell.backgroundColor = UIColor(hex: "#272729")
+                cell.layer.cornerRadius = 12
+                cell.clipsToBounds = true
+                cell.layer.shadowColor = UIColor.black.cgColor
+                cell.layer.shadowOffset = CGSize(width: 0, height: 2)
+                cell.layer.shadowRadius = 4
+                cell.layer.shadowOpacity = 0.3
+                cell.transform = CGAffineTransform(scaleX: 1.02, y: 1.02)
             }
         }
+    }
+    
+    func tableView(_ tableView: UITableView,
+                   willEndContextMenuInteraction configuration: UIContextMenuConfiguration,
+                   animator: UIContextMenuInteractionAnimating?) {
+        if let indexPath = configuration.identifier as? IndexPath,
+           let cell = tableView.cellForRow(at: indexPath) as? ToDoCell {
+            UIView.animate(withDuration: 0.3) {
+                cell.backgroundColor = .clear
+                cell.layer.cornerRadius = 0
+                cell.clipsToBounds = false
+                cell.layer.shadowOpacity = 0
+                cell.transform = .identity
+            }
+        }
+    }
 }
 
 //MARK: - UISearchBarDelegate
