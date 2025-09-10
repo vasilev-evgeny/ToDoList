@@ -14,6 +14,37 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        // В application(_:didFinishLaunchingWithOptions:) или в ToDoListViewController viewDidLoad
+        func checkAndLoadInitialData() {
+            CoreDataManager.shared.fetchTasks { tasks in
+                if tasks.isEmpty {
+                    print("📦 CoreData is empty, loading from network...")
+                    // Загружаем из сети если CoreData пусто
+                    NetworkManager.shared.fetchTasks { result in
+                        switch result {
+                        case .success(let networkTasks):
+                            // Сохраняем в CoreData
+                            let backgroundContext = CoreDataManager.shared.persistentContainer.newBackgroundContext()
+                            backgroundContext.perform {
+                                for task in networkTasks {
+                                    let taskEntity = TaskEntity(context: backgroundContext)
+                                    taskEntity.id = Int64(task.id)
+                                    taskEntity.todo = task.todo
+                                    taskEntity.completed = task.completed
+                                    taskEntity.userId = Int64(task.userId)
+                                }
+                                try? backgroundContext.save()
+                                print("✅ Initial data loaded from network and saved to CoreData")
+                            }
+                        case .failure(let error):
+                            print("❌ Failed to load initial data: \(error)")
+                        }
+                    }
+                } else {
+                    print("✅ CoreData already has \(tasks.count) tasks")
+                }
+            }
+        }
         return true
     }
 

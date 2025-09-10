@@ -4,6 +4,7 @@
 //
 //  Created by Евгений Васильев on 10.09.2025.
 //
+
 import CoreData
 
 class CoreDataManager {
@@ -45,6 +46,7 @@ class CoreDataManager {
             taskEntity.todo = todo
             taskEntity.completed = completed
             taskEntity.userId = Int64(userId)
+            
             do {
                 try backgroundContext.save()
             } catch {
@@ -59,6 +61,7 @@ class CoreDataManager {
             let request: NSFetchRequest<TaskEntity> = TaskEntity.fetchRequest()
             let sortDescriptor = NSSortDescriptor(key: "id", ascending: true)
             request.sortDescriptors = [sortDescriptor]
+            
             do {
                 let entities = try backgroundContext.fetch(request)
                 let tasks = entities.map { entity in
@@ -69,11 +72,16 @@ class CoreDataManager {
                         userId: Int(entity.userId)
                     )
                 }
+                print("📋 Fetched \(tasks.count) tasks from CoreData")
+                for task in tasks {
+                    print("   - \(task.id): \(task.todo) (completed: \(task.completed))")
+                }
+                
                 DispatchQueue.main.async {
                     completion(tasks)
                 }
             } catch {
-                print("Error fetching tasks: \(error)")
+                print("❌ Error fetching tasks: \(error)")
                 DispatchQueue.main.async {
                     completion([])
                 }
@@ -89,12 +97,20 @@ class CoreDataManager {
             
             do {
                 if let entity = try backgroundContext.fetch(request).first {
+                    let oldTodo = entity.todo ?? ""
                     entity.todo = task.todo
                     entity.completed = task.completed
                     try backgroundContext.save()
+                    print("✅ Task updated in CoreData:")
+                    print("   - ID: \(task.id)")
+                    print("   - Old: \(oldTodo)")
+                    print("   - New: \(task.todo)")
+                    print("   - Completed: \(task.completed)")
+                } else {
+                    print("❌ Task not found in CoreData for update: ID \(task.id)")
                 }
             } catch {
-                print("Error updating task: \(error)")
+                print("❌ Error updating task in CoreData: \(error)")
             }
         }
     }
@@ -123,6 +139,7 @@ class CoreDataManager {
             request.predicate = NSPredicate(format: "todo CONTAINS[cd] %@", query)
             let sortDescriptor = NSSortDescriptor(key: "id", ascending: true)
             request.sortDescriptors = [sortDescriptor]
+            
             do {
                 let entities = try backgroundContext.fetch(request)
                 let tasks = entities.map { entity in

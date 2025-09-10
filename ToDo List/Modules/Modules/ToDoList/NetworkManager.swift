@@ -4,6 +4,7 @@
 //
 //  Created by Евгений Васильев on 08.09.2025.
 //
+
 import Foundation
 
 class NetworkManager {

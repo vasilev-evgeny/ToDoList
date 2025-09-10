@@ -6,6 +6,7 @@
 //
 protocol ToDoListPresenterProtocol: AnyObject {
     func viewDidLoad()
+    func refreshTasks()
     func addNewTask()
     func didSelectTask(_ task: ToDoItem)
     func searchTask(query: String)
@@ -20,11 +21,17 @@ class ToDoListPresenter: ToDoListPresenterProtocol {
     var interactor: ToDoListInteractorProtocol!
     var router: ToDoListRouterProtocol!
     
-    private var tasks: [ToDoItem] = []
+    private(set) var tasks: [ToDoItem] = []
     
     func viewDidLoad() {
         view.showLoading()
         interactor.loadTasks()
+    }
+    
+    func refreshTasks() {
+        // Новый метод для принудительного обновления
+        view.showLoading()
+        interactor.refreshTasks()
     }
     
     func addNewTask() {
@@ -41,22 +48,14 @@ class ToDoListPresenter: ToDoListPresenterProtocol {
     
     func toggleTaskCompletion(_ task: ToDoItem) {
         interactor.toggleTaskCompletion(task)
-        if let index = tasks.firstIndex(where: { $0.id == task.id }) {
-            tasks[index].completed.toggle()
-            view.showTasks(tasks)
-        }
     }
     
     func deleteTask(_ task: ToDoItem) {
         interactor.deleteTask(task)
-        tasks.removeAll { $0.id == task.id }
-        view.showTasks(tasks)
     }
     
     func createTask(todo: String, completed: Bool) {
         interactor.createTask(todo: todo, completed: completed)
-        // После создания перезагружаем задачи
-        interactor.loadTasks()
     }
     
     // MARK: - Callbacks from Interactor

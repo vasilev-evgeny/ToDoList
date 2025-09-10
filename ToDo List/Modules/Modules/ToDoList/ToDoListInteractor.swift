@@ -9,11 +9,11 @@ import Foundation
 
 protocol ToDoListInteractorProtocol: AnyObject {
     func loadTasks()
+    func refreshTasks() // Добавляем новый метод
     func searchTasks(query: String)
     func toggleTaskCompletion(_ task: ToDoItem)
     func deleteTask(_ task: ToDoItem)
     func createTask(todo: String, completed: Bool)
-    func loadTasksFromNetwork() // Новый метод для загрузки из сети
 }
 
 class ToDoListInteractor: ToDoListInteractorProtocol {
@@ -23,13 +23,10 @@ class ToDoListInteractor: ToDoListInteractorProtocol {
     
     func loadTasks() {
         let operation = BlockOperation { [weak self] in
-            // Сначала проверяем, есть ли задачи в CoreData
             CoreDataManager.shared.fetchTasks { tasks in
                 if tasks.isEmpty {
-                    // Если задач нет, загружаем из сети
                     self?.loadTasksFromNetwork()
                 } else {
-                    // Если есть, показываем из CoreData
                     DispatchQueue.main.async {
                         self?.presenter.didLoadTasks(tasks)
                     }
@@ -39,16 +36,29 @@ class ToDoListInteractor: ToDoListInteractorProtocol {
         operationQueue.addOperation(operation)
     }
     
-    func loadTasksFromNetwork() {
+    func refreshTasks() {
+        // Принудительно загружаем свежие данные из CoreData
+        let operation = BlockOperation { [weak self] in
+            CoreDataManager.shared.fetchTasks { tasks in
+                DispatchQueue.main.async {
+                    print("🔄 Refreshed \(tasks.count) tasks from CoreData")
+                    self?.presenter.didLoadTasks(tasks)
+                }
+            }
+        }
+        operationQueue.addOperation(operation)
+    }
+    
+    private func loadTasksFromNetwork() {
         let operation = BlockOperation { [weak self] in
             NetworkManager.shared.fetchTasks { [weak self] result in
                 switch result {
                 case .success(let tasks):
-                    // Сохраняем задачи в CoreData
                     self?.saveTasksToCoreData(tasks)
-                    // Показываем задачи
-                    DispatchQueue.main.async {
-                        self?.presenter.didLoadTasks(tasks)
+                    CoreDataManager.shared.fetchTasks { tasksFromCoreData in
+                        DispatchQueue.main.async {
+                            self?.presenter.didLoadTasks(tasksFromCoreData)
+                        }
                     }
                 case .failure(let error):
                     DispatchQueue.main.async {
@@ -73,9 +83,9 @@ class ToDoListInteractor: ToDoListInteractorProtocol {
             
             do {
                 try backgroundContext.save()
-                print("Successfully saved \(tasks.count) tasks to CoreData")
+                print("✅ Successfully saved \(tasks.count) tasks to CoreData")
             } catch {
-                print("Error saving tasks to CoreData: \(error)")
+                print("❌ Error saving tasks to CoreData: \(error)")
             }
         }
     }
@@ -104,6 +114,21 @@ class ToDoListInteractor: ToDoListInteractorProtocol {
             var updatedTask = task
             updatedTask.completed.toggle()
             CoreDataManager.shared.updateTask(updatedTask)
+            
+            // Немедленно обновляем UI, а затем синхронизируем с CoreData
+            DispatchQueue.main.async {
+                // Сначала обновляем локальное состояние
+                if let index = self.presenter.tasks.firstIndex(where: { $0.id == task.id }) {
+                    var updatedTasks = self.presenter.tasks
+                    updatedTasks[index] = updatedTask
+                    self.presenter.didLoadTasks(updatedTasks)
+                }
+                
+                // Затем обновляем из CoreData для гарантии consistency
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    self.refreshTasks()
+                }
+            }
         }
         operationQueue.addOperation(operation)
     }
@@ -111,13 +136,17 @@ class ToDoListInteractor: ToDoListInteractorProtocol {
     func deleteTask(_ task: ToDoItem) {
         let operation = BlockOperation {
             CoreDataManager.shared.deleteTask(task)
+            
+            // После удаления обновляем список
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                self.refreshTasks()
+            }
         }
         operationQueue.addOperation(operation)
     }
     
     func createTask(todo: String, completed: Bool) {
         let operation = BlockOperation {
-            // Генерируем уникальный ID
             let id = Int.random(in: 1000...9999)
             let userId = 1
             
@@ -127,6 +156,11 @@ class ToDoListInteractor: ToDoListInteractorProtocol {
                 completed: completed,
                 userId: userId
             )
+            
+            // После создания обновляем список
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                self.refreshTasks()
+            }
         }
         operationQueue.addOperation(operation)
     }

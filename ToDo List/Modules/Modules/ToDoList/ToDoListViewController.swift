@@ -1,8 +1,9 @@
+//
 //  ToDoViewController.swift
 //  ToDo List
 //
 //  Created by Евгений Васильев on 04.09.2025.
-//
+
 import UIKit
 
 protocol ToDoListViewProtocol: AnyObject {
@@ -121,16 +122,7 @@ class ToDoListViewController: UIViewController {
     }
     
     @objc private func addTaskTapped() {
-    }
-    
-    private func toggleTaskCompletion(at indexPath: IndexPath) {
-        var task = tasks[indexPath.row]
-        task.completed.toggle()
-        tasks[indexPath.row] = task
-        tasksTableView.reloadRows(at: [indexPath], with: .automatic)
-        
-        // Здесь можно вызвать метод презентера для обновления на сервере/бд
-        // presenter.toggleTaskCompletion(task)
+        presenter.addNewTask()
     }
     
     private func showDeleteConfirmation(for task: ToDoItem, at indexPath: IndexPath) {
@@ -150,7 +142,6 @@ class ToDoListViewController: UIViewController {
         
         present(alert, animated: true)
     }
-    
     
     //MARK: - Constraints
     
@@ -222,11 +213,19 @@ extension ToDoListViewController: UITableViewDelegate, UITableViewDataSource {
         cell.selectionStyle = .none
         cell.contentView.backgroundColor = .clear
         cell.backgroundColor = .clear
+        
         cell.onCheckboxTapped = { [weak self] isCompleted in
+            guard let self = self else { return }
             var updatedTask = task
             updatedTask.completed = isCompleted
-            self?.presenter.toggleTaskCompletion(updatedTask)
+            // Обновляем задачу в массиве
+            self.tasks[indexPath.row] = updatedTask
+            // Сохраняем в CoreData
+            self.presenter.toggleTaskCompletion(updatedTask)
+            // Обновляем только эту ячейку
+            tableView.reloadRows(at: [indexPath], with: .none)
         }
+        
         return cell
     }
     
@@ -243,7 +242,6 @@ extension ToDoListViewController: UITableViewDelegate, UITableViewDataSource {
         let task = tasks[indexPath.row]
         
         return UIContextMenuConfiguration(identifier: indexPath as NSCopying, previewProvider: {
-            // Создаем preview контроллер
             let previewVC = UIViewController()
             previewVC.view.backgroundColor = .black
             
@@ -262,7 +260,6 @@ extension ToDoListViewController: UITableViewDelegate, UITableViewDataSource {
             ])
             return previewVC
         }) { _ in
-            // Создаем actions для меню
             let editAction = UIAction(
                 title: "Редактировать",
                 image: UIImage(named: "edit")
@@ -274,7 +271,12 @@ extension ToDoListViewController: UITableViewDelegate, UITableViewDataSource {
                 title: "Поделиться",
                 image: UIImage(named: "export")
             ) { [weak self] _ in
-                print("share")
+                let task = self?.tasks[indexPath.row]
+                let activityViewController = UIActivityViewController(
+                    activityItems: [task?.todo ?? ""],
+                    applicationActivities: nil
+                )
+                self?.present(activityViewController, animated: true)
             }
             let deleteAction = UIAction(
                 title: "Удалить",
@@ -301,12 +303,15 @@ extension ToDoListViewController: UITableViewDelegate, UITableViewDataSource {
               let cell = tasksTableView.cellForRow(at: indexPath) as? ToDoCell else {
             return nil
         }
+        
         let parameters = UIPreviewParameters()
         parameters.backgroundColor = .clear
         parameters.visiblePath = UIBezierPath(roundedRect: cell.bounds, cornerRadius: 12)
+        
         let cellCenterInTable = tasksTableView.convert(cell.center, from: cell.superview)
-        let targetPoint = CGPoint(x: cellCenterInTable.x, y: cellCenterInTable.y - 50)
-        let target = UIPreviewTarget(container: cell, center: targetPoint)
+        let targetPoint = CGPoint(x: cellCenterInTable.x, y: cellCenterInTable.y)
+        
+        let target = UIPreviewTarget(container: tasksTableView, center: targetPoint)
         return UITargetedPreview(view: cell, parameters: parameters, target: target)
     }
     
@@ -347,6 +352,7 @@ extension ToDoListViewController: UITableViewDelegate, UITableViewDataSource {
 //MARK: - UISearchBarDelegate
 extension ToDoListViewController: UISearchBarDelegate {
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        presenter.searchTask(query: searchText)
     }
     
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
@@ -356,6 +362,7 @@ extension ToDoListViewController: UISearchBarDelegate {
     func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
         searchBar.text = ""
         searchBar.resignFirstResponder()
+        presenter.searchTask(query: "")
     }
 }
 
@@ -374,7 +381,6 @@ extension ToDoListViewController: ToDoListViewProtocol {
     }
     
     func showLoading() {
-        // Можно добавить индикатор
         print("Загрузка...")
     }
     
