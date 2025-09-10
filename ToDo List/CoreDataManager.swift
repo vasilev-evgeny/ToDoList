@@ -22,6 +22,17 @@ class CoreDataManager {
         return container
     }()
     
+    func setup(completion: @escaping (Bool) -> Void) {
+           persistentContainer.loadPersistentStores { _, error in
+               if let error = error {
+                   print("CoreData setup failed: \(error)")
+                   completion(false)
+               } else {
+                   completion(true)
+               }
+           }
+       }
+    
     var context: NSManagedObjectContext {
         return persistentContainer.viewContext
     }

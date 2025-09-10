@@ -9,7 +9,7 @@ import Foundation
 
 protocol ToDoListInteractorProtocol: AnyObject {
     func loadTasks()
-    func refreshTasks() // Добавляем новый метод
+    func refreshTasks() 
     func searchTasks(query: String)
     func toggleTaskCompletion(_ task: ToDoItem)
     func deleteTask(_ task: ToDoItem)
@@ -37,7 +37,6 @@ class ToDoListInteractor: ToDoListInteractorProtocol {
     }
     
     func refreshTasks() {
-        // Принудительно загружаем свежие данные из CoreData
         let operation = BlockOperation { [weak self] in
             CoreDataManager.shared.fetchTasks { tasks in
                 DispatchQueue.main.async {
@@ -113,7 +112,6 @@ class ToDoListInteractor: ToDoListInteractorProtocol {
         let operation = BlockOperation {
             var updatedTask = task
             updatedTask.completed.toggle()
-            // Сохраняем в CoreData
             CoreDataManager.shared.updateTask(updatedTask)
             }
         operationQueue.addOperation(operation)
@@ -123,7 +121,6 @@ class ToDoListInteractor: ToDoListInteractorProtocol {
         let operation = BlockOperation {
             CoreDataManager.shared.deleteTask(task)
             
-            // После удаления обновляем список
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 self.refreshTasks()
             }
@@ -143,7 +140,6 @@ class ToDoListInteractor: ToDoListInteractorProtocol {
                 userId: userId
             )
             
-            // После создания обновляем список
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 self.refreshTasks()
             }

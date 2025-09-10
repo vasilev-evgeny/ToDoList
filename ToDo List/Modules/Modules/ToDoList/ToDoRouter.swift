@@ -38,6 +38,6 @@ class ToDoListRouter: ToDoListRouterProtocol {
     }
     
     func navigateToCreateTask() {
-        navigateToTaskDetails(task: nil) // Передаем nil для создания новой задачи
+        navigateToTaskDetails(task: nil) 
     }
 }

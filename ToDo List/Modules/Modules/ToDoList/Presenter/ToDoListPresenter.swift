@@ -26,10 +26,15 @@ class ToDoListPresenter: ToDoListPresenterProtocol {
     func viewDidLoad() {
         view.showLoading()
         interactor.loadTasks()
+        CoreDataManager.shared.setup { [weak self] success in
+            guard success else {
+                return
+            }
+            self?.interactor.loadTasks()
+        }
     }
     
     func refreshTasks() {
-        // Новый метод для принудительного обновления
         view.showLoading()
         interactor.refreshTasks()
     }

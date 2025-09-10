@@ -27,7 +27,7 @@ class TaskDetailViewController: UIViewController {
         label.textAlignment = .left
         label.font = UIFont.systemFont(ofSize: 12, weight: .regular)
         label.textColor = .gray
-        label.isHidden = true // Скрываем дату, так как её нет в данных
+        label.isHidden = false
         return label
     }()
     
@@ -54,7 +54,6 @@ class TaskDetailViewController: UIViewController {
     
     private func setupNavigationBar() {
         if presenter.isCreatingNewTask() {
-            // Для создания новой задачи
             let cancelButton = UIButton(type: .system)
             cancelButton.setTitle("Отмена", for: .normal)
             cancelButton.tintColor = UIColor(hex: "#FED702")
@@ -71,7 +70,6 @@ class TaskDetailViewController: UIViewController {
             
             navigationItem.title = "Новая задача"
         } else {
-            // Для редактирования существующей задачи
             let backButton = UIButton(type: .system)
             backButton.setImage(UIImage(systemName: "chevron.backward"), for: .normal)
             backButton.setTitle(" Назад", for: .normal)
@@ -185,6 +183,6 @@ extension TaskDetailViewController: TaskDetailViewProtocol {
     func setupForCreateMode() {
         taskTitleTextView.text = "Новая задача"
         taskBodyTextView.text = ""
-        taskBodyTextView.becomeFirstResponder() // Фокус на поле ввода
+        taskBodyTextView.becomeFirstResponder()
     }
 }

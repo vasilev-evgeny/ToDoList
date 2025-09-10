@@ -9,6 +9,9 @@ class ToDoCell: UITableViewCell {
     
     var onCheckboxTapped: ((Bool) -> Void)?
     
+    private var originalTitleText: String?
+    private var originalDetailText: String?
+    
     //MARK: - Create UI
     
     let titleLabel: UILabel = {
@@ -61,55 +64,79 @@ class ToDoCell: UITableViewCell {
     }
     
     private func updateTextAppearance(for isCompleted: Bool) {
-        if isCompleted == true {
-            // Создаём атрибутированный текст из текущего значения text
-            guard let currentText = titleLabel.text else { return }
-            guard let curText = detailLabel.text else { return }
+        if isCompleted {
+            guard let title = originalTitleText else { return }
+            guard let detail = originalDetailText else { return }
 
-            let attributedString = NSAttributedString(
-                string: currentText,
+            let attributedTitle = NSAttributedString(
+                string: title,
                 attributes: [
                     .strikethroughStyle: NSUnderlineStyle.single.rawValue,
-                    .foregroundColor: UIColor.gray
+                    .foregroundColor: UIColor.gray,
+                    .strikethroughColor: UIColor.gray
                 ]
             )
-            let attString = NSAttributedString(
-                string: curText,
+
+            let attributedDetail = NSAttributedString(
+                string: detail,
                 attributes: [
                     .strikethroughStyle: NSUnderlineStyle.single.rawValue,
-                    .foregroundColor: UIColor.gray
+                    .foregroundColor: UIColor.gray,
+                    .strikethroughColor: UIColor.gray
                 ]
             )
-            titleLabel.attributedText = attributedString
-            detailLabel.attributedText = attString
-            titleLabel.textColor = .gray
-            detailLabel.textColor = .gray
+
+            titleLabel.attributedText = attributedTitle
+            detailLabel.attributedText = attributedDetail
+            // Не нужно менять textColor, так как он берётся из attributedString
         } else {
-//            titleLabel.text = "Задача № \()"
-//            detailLabel.attributedText = nil
+            // Сбрасываем атрибутированный текст и восстанавливаем обычный
+            titleLabel.attributedText = nil
+            detailLabel.attributedText = nil
+            
+            titleLabel.text = originalTitleText
+            detailLabel.text = originalDetailText
+            
             titleLabel.textColor = .white
             detailLabel.textColor = .white
         }
     }
+ 
     
     func configure(with task: ToDoItem) {
-        titleLabel.text = "Задача #\(task.id)"
-        detailLabel.text = task.todo
+        originalTitleText = "Задача #\(task.id)"
+        originalDetailText = task.todo  // например, описание задачи
+        
         backgroundColor = .clear
         contentView.backgroundColor = .clear
+        
         checkBoxButton.isSelected = task.completed
+        
+        // Сначала сбросим всё, потом обновим внешний вид
+        titleLabel.attributedText = nil
+        detailLabel.attributedText = nil
+        titleLabel.text = originalTitleText
+        detailLabel.text = originalDetailText
+        titleLabel.textColor = task.completed ? .gray : .white
+        detailLabel.textColor = task.completed ? .gray : .white
+        
         updateTextAppearance(for: task.completed)
     }
     
     override func prepareForReuse() {
         super.prepareForReuse()
+        
         titleLabel.attributedText = nil
         detailLabel.attributedText = nil
-//        titleLabel.text = nil
-//        detailLabel.text = nil
+        titleLabel.text = nil
+        detailLabel.text = nil
         titleLabel.textColor = .white
         detailLabel.textColor = .white
         checkBoxButton.isSelected = false
+        
+        originalTitleText = nil
+        originalDetailText = nil
+        
         onCheckboxTapped = nil
     }
     
@@ -163,7 +190,7 @@ class ToDoCell: UITableViewCell {
         NSLayoutConstraint.activate([
             dateLabel.topAnchor.constraint(equalTo: detailLabel.bottomAnchor, constant: 6),
             dateLabel.leadingAnchor.constraint(equalTo: checkBoxButton.trailingAnchor, constant: 12),
-            dateLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16)
+            dateLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
         ])
     }
 }
