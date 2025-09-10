@@ -3,7 +3,6 @@
 //  ToDo List
 //
 //  Created by Евгений Васильев on 04.09.2025.
-
 import UIKit
 
 class ToDoCell: UITableViewCell {
@@ -36,6 +35,7 @@ class ToDoCell: UITableViewCell {
         label.font = UIFont.systemFont(ofSize: 12, weight: .regular)
         label.textColor = .gray
         label.numberOfLines = 0
+        label.isHidden = true // Скрываем дату полностью
         return label
     }()
     
@@ -63,36 +63,26 @@ class ToDoCell: UITableViewCell {
     private func updateTextAppearance(for isCompleted: Bool) {
         if isCompleted {
             // Зачеркнутый текст серого цвета для выполненной задачи
-            let titleAttributes: [NSAttributedString.Key: Any] = [
-                .strikethroughStyle: NSUnderlineStyle.single.rawValue,
-                .foregroundColor: UIColor.gray
-            ]
-            let detailAttributes: [NSAttributedString.Key: Any] = [
-                .strikethroughStyle: NSUnderlineStyle.single.rawValue,
-                .foregroundColor: UIColor.gray
-            ]
-            titleLabel.attributedText = NSAttributedString(string: titleLabel.text ?? "", attributes: titleAttributes)
-            detailLabel.attributedText = NSAttributedString(string: detailLabel.text ?? "", attributes: detailAttributes)
+            let attributedString = NSAttributedString(
+                string: titleLabel.text ?? "",
+                attributes: [
+                    .strikethroughStyle: NSUnderlineStyle.single.rawValue,
+                    .foregroundColor: UIColor.gray
+                ]
+            )
+            titleLabel.attributedText = attributedString
+            detailLabel.textColor = .gray
         } else {
-            // Обычный текст белого цвета без зачеркивания для невыполненной задачи
+            // Обычный текст белого цвета без зачеркивания
             titleLabel.attributedText = nil
-            detailLabel.attributedText = nil
             titleLabel.textColor = .white
             detailLabel.textColor = .white
-            // Убедимся, что текст установлен правильно
-            if let originalTitle = titleLabel.text {
-                titleLabel.text = originalTitle
-            }
-            if let originalDetail = detailLabel.text {
-                detailLabel.text = originalDetail
-            }
         }
     }
     
     func configure(with task: ToDoItem) {
         // Сначала сбрасываем все атрибуты
         titleLabel.attributedText = nil
-        detailLabel.attributedText = nil
         
         // Устанавливаем обычный текст
         titleLabel.text = "Задача #\(task.id)"
@@ -122,6 +112,7 @@ class ToDoCell: UITableViewCell {
         titleLabel.textColor = .white
         detailLabel.textColor = .white
         checkBoxButton.isSelected = false
+        onCheckboxTapped = nil
     }
     
     //MARK: - Setup
@@ -150,7 +141,7 @@ class ToDoCell: UITableViewCell {
     private func setConstraints() {
         checkBoxButton.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            checkBoxButton.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
+            checkBoxButton.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
             checkBoxButton.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             checkBoxButton.widthAnchor.constraint(equalToConstant: 24),
             checkBoxButton.heightAnchor.constraint(equalToConstant: 24)
@@ -174,7 +165,8 @@ class ToDoCell: UITableViewCell {
         dateLabel.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
             dateLabel.topAnchor.constraint(equalTo: detailLabel.bottomAnchor, constant: 6),
-            dateLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12)
+            dateLabel.leadingAnchor.constraint(equalTo: checkBoxButton.trailingAnchor, constant: 12),
+            dateLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16)
         ])
     }
 }

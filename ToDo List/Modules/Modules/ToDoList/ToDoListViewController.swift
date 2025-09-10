@@ -218,12 +218,15 @@ extension ToDoListViewController: UITableViewDelegate, UITableViewDataSource {
             guard let self = self else { return }
             var updatedTask = task
             updatedTask.completed = isCompleted
+            
+            // Немедленно обновляем UI
+            cell.configure(with: updatedTask)
+            
             // Обновляем задачу в массиве
             self.tasks[indexPath.row] = updatedTask
+            
             // Сохраняем в CoreData
             self.presenter.toggleTaskCompletion(updatedTask)
-            // Обновляем только эту ячейку
-            tableView.reloadRows(at: [indexPath], with: .none)
         }
         
         return cell

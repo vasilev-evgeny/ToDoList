@@ -113,22 +113,11 @@ class ToDoListInteractor: ToDoListInteractorProtocol {
         let operation = BlockOperation {
             var updatedTask = task
             updatedTask.completed.toggle()
+            
+            // Сохраняем в CoreData
             CoreDataManager.shared.updateTask(updatedTask)
             
-            // Немедленно обновляем UI, а затем синхронизируем с CoreData
-            DispatchQueue.main.async {
-                // Сначала обновляем локальное состояние
-                if let index = self.presenter.tasks.firstIndex(where: { $0.id == task.id }) {
-                    var updatedTasks = self.presenter.tasks
-                    updatedTasks[index] = updatedTask
-                    self.presenter.didLoadTasks(updatedTasks)
-                }
-                
-                // Затем обновляем из CoreData для гарантии consistency
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                    self.refreshTasks()
-                }
-            }
+            print("✅ Task completion toggled: ID \(updatedTask.id), completed: \(updatedTask.completed)")
         }
         operationQueue.addOperation(operation)
     }
